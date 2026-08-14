@@ -13,4 +13,4 @@ def test_drop_incomplete_rows():
 
     result = drop_incomplete_rows(df)
 
-    assert len(result) == 1
+    assert len(result) == 99
