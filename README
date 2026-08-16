@@ -1,0 +1,105 @@
+# CI/CD Data Pipeline Project
+
+A small, end-to-end data pipeline built to learn and demonstrate CI/CD practices for data engineering — from raw data to a validated, containerized, automatically-deployed pipeline.
+
+## What this project does
+
+The pipeline reads raw sales data, cleans it, validates its quality, and computes derived metrics — with every step covered by automated tests and gated by a CI/CD pipeline that only ships working code.
+
+**Pipeline stages:**
+1. **Extract** — read sales data from a CSV
+2. **Transform** — drop incomplete rows, compute revenue per order
+3. **Validate** — reject the run if quantities or prices are zero/negative, or if no valid rows remain
+
+## Why this project exists
+
+Data pipelines have a failure mode regular software doesn't: the code can be perfectly correct and still produce garbage if the incoming data is bad. This project treats data validation as a first-class, testable part of the pipeline — not an afterthought — and wraps the whole thing in CI/CD so that broken logic or bad assumptions get caught automatically, before they reach production.
+
+## Tech stack
+
+- **Python** + **pandas** — data transformation
+- **pytest** — automated testing
+- **Docker** — containerization for consistent, portable execution
+- **GitHub Actions** — CI/CD automation
+- **Docker Hub** — container image registry
+
+## Project structure
+
+```
+cicd-pipeline-project/
+├── src/
+│   ├── read_data.py      # entry point: runs the pipeline
+│   └── transform.py      # cleaning, revenue calculation, validation logic
+├── tests/
+│   └── test_transform.py # unit tests, including tests for bad data rejection
+├── data/
+│   └── sample_sales.csv  # sample dataset (deliberately includes bad rows)
+├── Dockerfile
+├── requirements.txt
+└── .github/
+    └── workflows/
+        └── ci.yml         # CI/CD pipeline definition
+```
+
+## How the CI/CD pipeline works
+
+On every push to GitHub:
+
+1. **`test` job** — installs dependencies and runs the full pytest suite
+2. **`build-and-push` job** — only runs if `test` passes. Builds a Docker image and pushes it to Docker Hub.
+
+If a code change breaks a test, the pipeline stops there — no image is ever built or published from broken code. This is the core safety guarantee of the whole setup: bad code cannot silently reach a shippable artifact.
+
+## Running it locally
+
+```bash
+git clone https://github.com/MohammadAbidShah/cicd-pipeline-project.git
+cd cicd-pipeline-project
+python -m venv venv
+venv\Scripts\activate        # on Mac/Linux: source venv/bin/activate
+pip install -r requirements.txt
+python src/read_data.py
+```
+
+## Running the tests
+
+```bash
+python -m pytest tests/
+```
+
+Includes tests for:
+- Correct removal of incomplete rows
+- Correct revenue calculation
+- Validation correctly rejecting negative quantities
+- Validation correctly rejecting zero prices
+
+## Running in Docker
+
+```bash
+docker build -t cicd-pipeline-project .
+docker run cicd-pipeline-project
+```
+
+The pipeline runs identically inside the container as it does locally — no dependency on the host machine's Python setup.
+
+## Pulling the published image
+
+The CI/CD pipeline automatically publishes a fresh image to Docker Hub on every successful push to `main`:
+
+```bash
+docker pull mohammadabidshah/cicd-pipeline-project
+docker run mohammadabidshah/cicd-pipeline-project
+```
+
+## What I learned building this
+
+- Setting up Git and GitHub from a completely empty project, including branch naming and remote setup
+- Writing pure, testable transformation functions instead of tangled script logic
+- Using pytest to verify both correct behavior and proper rejection of bad data
+- Containerizing a Python application with Docker, including debugging environment/virtualization setup issues
+- Building a two-stage GitHub Actions pipeline with a test gate before deployment
+- Managing credentials securely using GitHub Secrets and Docker Hub access tokens instead of hardcoding passwords
+
+## What's next
+
+This project is structured so it can extend into a real cloud pipeline — reading from AWS S3 instead of a local CSV, and pushing cleaned data to Power BI instead of a local file — without rewriting the core transform and validation logic. The extract and load steps are being refactored into swappable components so the existing AWS-Power BI pipeline can plug in directly.
