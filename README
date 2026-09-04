@@ -1,6 +1,6 @@
 # CI/CD Data Pipeline Project
 
-A small, end-to-end data pipeline built to learn and demonstrate CI/CD practices for data engineering — from raw data to a validated, containerized, automatically-deployed pipeline.
+An end-to-end data pipeline built to learn and demonstrate CI/CD practices for data engineering — from raw data to a validated, containerized, automatically-deployed pipeline.
 
 ## What this project does
 
