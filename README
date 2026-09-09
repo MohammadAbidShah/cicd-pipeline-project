@@ -1,105 +1,203 @@
 # CI/CD Data Pipeline Project
 
-An end-to-end data pipeline built to learn and demonstrate CI/CD practices for data engineering — from raw data to a validated, containerized, automatically-deployed pipeline.
+An end-to-end Python data pipeline that extracts, transforms, validates, tests, containerizes, and publishes sales-processing code automatically.
 
-## What this project does
+## What the project does
 
-The pipeline reads raw sales data, cleans it, validates its quality, and computes derived metrics — with every step covered by automated tests and gated by a CI/CD pipeline that only ships working code.
+The pipeline:
 
-**Pipeline stages:**
-1. **Extract** — read sales data from a CSV
-2. **Transform** — drop incomplete rows, compute revenue per order
-3. **Validate** — reject the run if quantities or prices are zero/negative, or if no valid rows remain
-
-## Why this project exists
-
-Data pipelines have a failure mode regular software doesn't: the code can be perfectly correct and still produce garbage if the incoming data is bad. This project treats data validation as a first-class, testable part of the pipeline — not an afterthought — and wraps the whole thing in CI/CD so that broken logic or bad assumptions get caught automatically, before they reach production.
-
-## Tech stack
-
-- **Python** + **pandas** — data transformation
-- **pytest** — automated testing
-- **Docker** — containerization for consistent, portable execution
-- **GitHub Actions** — CI/CD automation
-- **Docker Hub** — container image registry
+1. Reads sales data from a CSV file.
+2. Removes incomplete records.
+3. Calculates revenue for each order.
+4. Validates quantities and prices.
+5. Rejects invalid data.
+6. Runs automated tests.
+7. Builds a Docker image when tests pass.
+8. Publishes the image to Docker Hub.
 
 ## Project structure
 
-```
+```text
 cicd-pipeline-project/
 ├── src/
-│   ├── read_data.py      # entry point: runs the pipeline
-│   └── transform.py      # cleaning, revenue calculation, validation logic
+│   ├── read_data.py
+│   └── transform.py
 ├── tests/
-│   └── test_transform.py # unit tests, including tests for bad data rejection
+│   └── test_transform.py
 ├── data/
-│   └── sample_sales.csv  # sample dataset (deliberately includes bad rows)
+│   └── sample_sales.csv
 ├── Dockerfile
 ├── requirements.txt
 └── .github/
     └── workflows/
-        └── ci.yml         # CI/CD pipeline definition
+        └── ci.yml
 ```
 
-## How the CI/CD pipeline works
+## Technology stack
 
-On every push to GitHub:
+- Python
+- pandas
+- pytest
+- Docker
+- GitHub Actions
+- Docker Hub
 
-1. **`test` job** — installs dependencies and runs the full pytest suite
-2. **`build-and-push` job** — only runs if `test` passes. Builds a Docker image and pushes it to Docker Hub.
+## Complete workflow
 
-If a code change breaks a test, the pipeline stops there — no image is ever built or published from broken code. This is the core safety guarantee of the whole setup: bad code cannot silently reach a shippable artifact.
+### 1. Make code changes
 
-## Running it locally
+Update the Python files, tests, data, Dockerfile, or workflow configuration.
 
-```bash
-git clone https://github.com/MohammadAbidShah/cicd-pipeline-project.git
-cd cicd-pipeline-project
-python -m venv venv
-venv\Scripts\activate        # on Mac/Linux: source venv/bin/activate
+### 2. Run the pipeline locally
+
+Activate the virtual environment and install dependencies:
+
+```powershell
+venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+Run the application:
+
+```powershell
 python src/read_data.py
 ```
 
-## Running the tests
+Run the tests:
 
-```bash
+```powershell
 python -m pytest tests/
 ```
 
-Includes tests for:
-- Correct removal of incomplete rows
-- Correct revenue calculation
-- Validation correctly rejecting negative quantities
-- Validation correctly rejecting zero prices
+### 3. Commit and push the changes
 
-## Running in Docker
+After confirming that the code works locally, run:
 
-```bash
-docker build -t cicd-pipeline-project .
-docker run cicd-pipeline-project
+```powershell
+git add .
+git commit -m "Update pipeline"
+git push origin main
 ```
 
-The pipeline runs identically inside the container as it does locally — no dependency on the host machine's Python setup.
+### 4. GitHub Actions starts automatically
 
-## Pulling the published image
+Every push to the `main` branch triggers the workflow in:
 
-The CI/CD pipeline automatically publishes a fresh image to Docker Hub on every successful push to `main`:
+```text
+.github/workflows/ci.yml
+```
 
-```bash
+The workflow performs these steps:
+
+#### Test job
+
+- Checks out the repository.
+- Sets up Python.
+- Installs dependencies.
+- Runs the complete pytest test suite.
+
+If a test fails, the workflow stops and the Docker image is not published.
+
+#### Build-and-push job
+
+This job runs only when the test job succeeds.
+
+It:
+
+1. Builds the Docker image.
+2. Logs in to Docker Hub using GitHub Secrets.
+3. Pushes the image to Docker Hub.
+
+The published image is:
+
+```text
+mohammadabidshah/cicd-pipeline-project
+```
+
+GitHub Actions publishes the image, but it does not automatically run the container.
+
+### 5. Pull the updated Docker image
+
+After GitHub Actions completes successfully, download the latest image:
+
+```powershell
+docker pull mohammadabidshah/cicd-pipeline-project
+```
+
+### 6. Run the Docker container
+
+Run the pipeline inside Docker:
+
+```powershell
+docker run mohammadabidshah/cicd-pipeline-project
+```
+
+## Complete command sequence
+
+Use this sequence after updating the code:
+
+```powershell
+git add .
+git commit -m "Update pipeline"
+git push origin main
+```
+
+Wait for the GitHub Actions workflow to pass, then run:
+
+```powershell
 docker pull mohammadabidshah/cicd-pipeline-project
 docker run mohammadabidshah/cicd-pipeline-project
 ```
 
-## What I learned building this
+## Local Docker execution
 
-- Setting up Git and GitHub from a completely empty project, including branch naming and remote setup
-- Writing pure, testable transformation functions instead of tangled script logic
-- Using pytest to verify both correct behavior and proper rejection of bad data
-- Containerizing a Python application with Docker, including debugging environment/virtualization setup issues
-- Building a two-stage GitHub Actions pipeline with a test gate before deployment
-- Managing credentials securely using GitHub Secrets and Docker Hub access tokens instead of hardcoding passwords
+To build and run the image locally:
 
-## What's next
+```powershell
+docker build -t cicd-pipeline-project .
+docker run cicd-pipeline-project
+```
 
-This project is structured so it can extend into a real cloud pipeline — reading from AWS S3 instead of a local CSV, and pushing cleaned data to Power BI instead of a local file — without rewriting the core transform and validation logic. The extract and load steps are being refactored into swappable components so the existing AWS-Power BI pipeline can plug in directly.
+## CI/CD safety guarantee
+
+The Docker image is published only when all automated tests pass.
+
+```text
+Code change
+    ↓
+Git commit
+    ↓
+Git push
+    ↓
+GitHub Actions starts
+    ↓
+Tests run
+    ↓
+Tests pass?
+    ├── No  → Workflow stops; image is not published
+    └── Yes → Docker image is built and pushed to Docker Hub
+```
+
+The container must then be started manually with `docker run`.
+
+## GitHub Secrets
+
+Docker Hub credentials should be stored in GitHub repository secrets rather than hardcoded in the source code.
+
+Typical secrets include:
+
+- Docker Hub username
+- Docker Hub access token
+
+## Summary
+
+This project automates the following process:
+
+```text
+Process sales data
+    → Run tests
+    → Push code to GitHub
+    → Build Docker image
+    → Publish image to Docker Hub
+    → Pull and run the container
+```
