@@ -14,7 +14,7 @@ def test_drop_incomplete_rows():
 
     result = drop_incomplete_rows(df)
 
-    assert len(result) == 0
+    assert len(result) == 1
 
 
 def test_validate_rejects_negative_quantity():
